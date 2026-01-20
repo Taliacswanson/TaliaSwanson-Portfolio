@@ -1,7 +1,7 @@
 ---
 title: "About me"
 ---
-![](Profile.JPEG)
+![](Profile.JPEG) 
 
 My name is Talia C. Swanson, and I am currently a second-year Master of Public Health (MPH) student in the Epidemiology concentration. I completed my Bachelor of Science in Biology at the University of Georgia this past Summer and am originally from Atlanta, Georgia.
 
