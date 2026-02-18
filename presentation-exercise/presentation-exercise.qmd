@@ -1,0 +1,112 @@
+---
+title: "Presentation Exercise – Halloween Candy"
+format: html
+---
+
+# Halloween Candy Power Ranking 
+For the presentation exercise, I chose to use the Halloween candy ranking set. 
+
+
+## Original Graph from "FiveThirtyEight" Halloween Candy Power Ranking 
+
+
+## Reproduced Graph for Halloween Candy Power Ranking
+```{r}
+
+library(tidyverse)
+library(here) 
+
+# Load candy dataset using here()
+candy <- read_csv(here("presentation-exercise", "candy-data.csv"))
+
+# Quick look at the data
+glimpse(candy)
+
+```
+
+```{r}
+
+# Rank candies by win percentage
+candy_ranked <- candy %>%
+  arrange(desc(winpercent)) %>%
+  mutate(competitorname = fct_reorder(competitorname, winpercent))
+
+# Reproduce the horizontal bar chart
+ggplot(candy_ranked, aes(x = winpercent, y = competitorname)) +
+  geom_col(fill = "#F28E2B") +
+  labs(
+    title = "The Ultimate Halloween Candy Power Ranking",
+    subtitle = "Win percentage based on head-to-head matchups",
+    x = "Win Percentage",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12)
+
+```
+
+ This coding gave me the general type of graph I was looking to recreate, however, it needs a lot of shaping of be publication ready. To adjust the spacing between categories (bars) in my Halloween candy graph, I asked an ChatGPT: "How do I increase or decrease the spacing between categories in a horizontal bar chart in ggplot2?" AI suggested changing the `width` parameter in `geom_col()` and explained that lower `width` values create more space between bars. After refinement in my code I was able to adjust the code this way below. 
+
+```{r}
+
+# Rank candies by percentages with row number
+candy_ranked <- candy %>%
+  arrange(desc(winpercent)) %>%
+  mutate(
+    RK = row_number(),
+    competitorname = fct_reorder(competitorname, winpercent)
+  )
+
+# Horizontal bar chart with text and spacing
+ggplot(candy_ranked, aes(x = winpercent, y = competitorname)) +
+  geom_col(fill = "#F28E2B", width = 0.7) +  # adjust width for spacing
+  geom_text(
+    aes(label = round(winpercent, 1)),
+    hjust = -0.1,
+    size = 3.5
+  ) +
+  scale_x_continuous(limits = c(0, 90), expand = c(0, 0)) +
+  labs(
+    title = "The Ultimate Halloween Candy Power Ranking",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 9),
+    axis.text.x = element_blank(),
+    axis.ticks = element_blank(),
+    plot.title = element_text(face = "bold", size = 14)
+  )
+ 
+```
+
+Even with this prompt from AI, the recreated graph is having a figure size issue, so from there I tried to adjust the sizing and proportions of this graph and I adjusted the code to this. 
+
+```{r fig.height=16, fig.width=10}
+ 
+ ggplot(candy_ranked, aes(x = winpercent, y = competitorname)) +
+  geom_col(fill = "#F28E2B", width = 0.7) +
+  geom_text(
+    aes(label = round(winpercent, 1)),
+    hjust = -0.1,
+    size = 3.5
+  ) +
+  scale_x_continuous(limits = c(0, 90), expand = c(0, 0)) +
+  labs(
+    title = "The Ultimate Halloween Candy Power Ranking",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 9),
+    axis.text.x = element_blank(),
+    axis.ticks = element_blank(),
+    plot.title = element_text(face = "bold", size = 14)
+  )
+ 
+```
