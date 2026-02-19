@@ -110,3 +110,61 @@ Even with this prompt from AI, the recreated graph is having a figure size issue
   )
  
 ```
+
+
+## Summary Table: Top 10 Halloween Candies
+Moving forward, we want to create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset.
+
+```{r}
+library(dplyr)
+library(gt)
+library(scales)
+
+# Top 10 candies by win percentage
+top10 <- candy %>%
+  arrange(desc(winpercent)) %>%
+  slice(1:10) %>%
+  mutate(
+    Rank = row_number()
+  ) %>%
+  select(Rank, competitorname, winpercent)
+
+# Calculate automatic summary statistic
+mean_top10 <- mean(top10$winpercent)
+
+# Create styled table
+top10 %>%
+  gt() %>%
+  tab_header(
+    title = md("**Top 10 Halloween Candies by Win Percentage**"),
+    subtitle = "Ranked based on head-to-head matchup performance"
+  ) %>%
+  fmt_number(
+    columns = winpercent,
+    decimals = 1
+  ) %>%
+  data_color(
+    columns = winpercent,
+    colors = col_numeric(
+      palette = c("#fde0dd", "#31a354"),
+      domain = NULL
+    )
+  ) %>%
+  cols_label(
+    competitorname = "Candy",
+    winpercent = "Win Percentage"
+  ) %>%
+  tab_source_note(
+    source_note = md(
+      paste0(
+        "*Mean win percentage (Top 10):* **",
+        round(mean_top10, 1),
+        "%**"
+      )
+    )
+  ) %>%
+  tab_footnote(
+    footnote = "Win percentage calculated from 85,000+ head-to-head candy matchups.",
+    locations = cells_column_labels(columns = winpercent)
+  )
+```
