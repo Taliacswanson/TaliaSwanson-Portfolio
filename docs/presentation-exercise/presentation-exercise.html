@@ -198,10 +198,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For the presentation exercise, I chose to use the Halloween candy ranking set.</p>
 <section id="original-graph-from-fivethirtyeight-halloween-candy-power-ranking" class="level2">
 <h2 class="anchored" data-anchor-id="original-graph-from-fivethirtyeight-halloween-candy-power-ranking">Original Graph from “FiveThirtyEight” Halloween Candy Power Ranking</h2>
-<p><img src="halloween_ranking.png" class="img-fluid" style="width:100.0%"></p>
+<p><img src="halloween_ranking.png" height="850"></p>
 </section>
-<section id="reproduced-graph-for-halloween-candy-power-ranking" class="level2">
-<h2 class="anchored" data-anchor-id="reproduced-graph-for-halloween-candy-power-ranking">Reproduced Graph for Halloween Candy Power Ranking</h2>
+<section id="recreated-graph-for-halloween-candy-power-ranking" class="level2">
+<h2 class="anchored" data-anchor-id="recreated-graph-for-halloween-candy-power-ranking">Recreated Graph for Halloween Candy Power Ranking</h2>
 <p>For this exercise I will recreate the graph given, however, I will leave all the rough draft codes that led to reproducing my graph. This is just to be able to see how certain changes, in code changed certain aspect of my recreated visual.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -359,8 +359,8 @@ $ winpercent       &lt;dbl&gt; 66.97173, 67.60294, 32.26109, 46.11650, 52.34146,
 <p>This table is show the average win sahre based on candy type and categories based on the ranking</p>
 <p><img src="avg_win_share.png" class="img-fluid" style="width:100.0%"></p>
 </section>
-<section id="summary-table-avergae-win-share-reproduced" class="level2">
-<h2 class="anchored" data-anchor-id="summary-table-avergae-win-share-reproduced">Summary Table: Avergae Win Share (reproduced)</h2>
+<section id="summary-table-average-win-share-recreated" class="level2">
+<h2 class="anchored" data-anchor-id="summary-table-average-win-share-recreated">Summary Table: Average Win Share (Recreated)</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
@@ -448,7 +448,7 @@ $ winpercent       &lt;dbl&gt; 66.97173, 67.60294, 32.26109, 46.11650, 52.34146,
 </section>
 <section id="summary-table-top-10-halloween-candies-produced-by-me" class="level2">
 <h2 class="anchored" data-anchor-id="summary-table-top-10-halloween-candies-produced-by-me">Summary Table: Top 10 Halloween Candies (produced by me)</h2>
-<p>Moving forward, we want to create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset. I did not recreate a table that was already given, instead I decided to make a table.</p>
+<p>Moving forward, I wanted to a different create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset. This is not a reproduced table, instead, I decided to make a table to display the top 10 candies by winning percentages. It is taking the first 10 groups from the long original chart and placing them within a table. For this, I asked the AI to generate a table showing the top 10 Halloween candies based on win percentage from a dataset of head-to-head candy matchups. I wanted the table to be ranked and have color-coded performance. The AI produced R code using the gt package with formatted numbers, colored cells, a header, and footnotes for clarity.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -523,23 +523,23 @@ Attaching package: 'scales'</code></pre>
 This warning is displayed once every 8 hours.</code></pre>
 </div>
 <div class="cell-output-display">
-<div id="ofwdtpxubs" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ofwdtpxubs table {
+<div id="dtnwraftyb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#dtnwraftyb table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ofwdtpxubs thead, #ofwdtpxubs tbody, #ofwdtpxubs tfoot, #ofwdtpxubs tr, #ofwdtpxubs td, #ofwdtpxubs th {
+#dtnwraftyb thead, #dtnwraftyb tbody, #dtnwraftyb tfoot, #dtnwraftyb tr, #dtnwraftyb td, #dtnwraftyb th {
   border-style: none;
 }
 
-#ofwdtpxubs p {
+#dtnwraftyb p {
   margin: 0;
   padding: 0;
 }
 
-#ofwdtpxubs .gt_table {
+#dtnwraftyb .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -565,12 +565,12 @@ This warning is displayed once every 8 hours.</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_caption {
+#dtnwraftyb .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ofwdtpxubs .gt_title {
+#dtnwraftyb .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -582,7 +582,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-width: 0;
 }
 
-#ofwdtpxubs .gt_subtitle {
+#dtnwraftyb .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -594,7 +594,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-top-width: 0;
 }
 
-#ofwdtpxubs .gt_heading {
+#dtnwraftyb .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -606,13 +606,13 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_bottom_border {
+#dtnwraftyb .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_col_headings {
+#dtnwraftyb .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -627,7 +627,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_col_heading {
+#dtnwraftyb .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -647,7 +647,7 @@ This warning is displayed once every 8 hours.</code></pre>
   overflow-x: hidden;
 }
 
-#ofwdtpxubs .gt_column_spanner_outer {
+#dtnwraftyb .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -659,15 +659,15 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 4px;
 }
 
-#ofwdtpxubs .gt_column_spanner_outer:first-child {
+#dtnwraftyb .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ofwdtpxubs .gt_column_spanner_outer:last-child {
+#dtnwraftyb .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ofwdtpxubs .gt_column_spanner {
+#dtnwraftyb .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -679,11 +679,11 @@ This warning is displayed once every 8 hours.</code></pre>
   width: 100%;
 }
 
-#ofwdtpxubs .gt_spanner_row {
+#dtnwraftyb .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ofwdtpxubs .gt_group_heading {
+#dtnwraftyb .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -709,7 +709,7 @@ This warning is displayed once every 8 hours.</code></pre>
   text-align: left;
 }
 
-#ofwdtpxubs .gt_empty_group_heading {
+#dtnwraftyb .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -724,15 +724,15 @@ This warning is displayed once every 8 hours.</code></pre>
   vertical-align: middle;
 }
 
-#ofwdtpxubs .gt_from_md > :first-child {
+#dtnwraftyb .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ofwdtpxubs .gt_from_md > :last-child {
+#dtnwraftyb .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ofwdtpxubs .gt_row {
+#dtnwraftyb .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -751,7 +751,7 @@ This warning is displayed once every 8 hours.</code></pre>
   overflow-x: hidden;
 }
 
-#ofwdtpxubs .gt_stub {
+#dtnwraftyb .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -764,7 +764,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#ofwdtpxubs .gt_stub_row_group {
+#dtnwraftyb .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -778,15 +778,15 @@ This warning is displayed once every 8 hours.</code></pre>
   vertical-align: top;
 }
 
-#ofwdtpxubs .gt_row_group_first td {
+#dtnwraftyb .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ofwdtpxubs .gt_row_group_first th {
+#dtnwraftyb .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ofwdtpxubs .gt_summary_row {
+#dtnwraftyb .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -796,16 +796,16 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#ofwdtpxubs .gt_first_summary_row {
+#dtnwraftyb .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_first_summary_row.thick {
+#dtnwraftyb .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ofwdtpxubs .gt_last_summary_row {
+#dtnwraftyb .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -815,7 +815,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_grand_summary_row {
+#dtnwraftyb .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -825,7 +825,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#ofwdtpxubs .gt_first_grand_summary_row {
+#dtnwraftyb .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -835,7 +835,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_last_grand_summary_row_top {
+#dtnwraftyb .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -845,11 +845,11 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_striped {
+#dtnwraftyb .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ofwdtpxubs .gt_table_body {
+#dtnwraftyb .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -858,7 +858,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_footnotes {
+#dtnwraftyb .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -872,7 +872,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_footnote {
+#dtnwraftyb .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -881,7 +881,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#ofwdtpxubs .gt_sourcenotes {
+#dtnwraftyb .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -895,7 +895,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#ofwdtpxubs .gt_sourcenote {
+#dtnwraftyb .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -903,72 +903,72 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#ofwdtpxubs .gt_left {
+#dtnwraftyb .gt_left {
   text-align: left;
 }
 
-#ofwdtpxubs .gt_center {
+#dtnwraftyb .gt_center {
   text-align: center;
 }
 
-#ofwdtpxubs .gt_right {
+#dtnwraftyb .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ofwdtpxubs .gt_font_normal {
+#dtnwraftyb .gt_font_normal {
   font-weight: normal;
 }
 
-#ofwdtpxubs .gt_font_bold {
+#dtnwraftyb .gt_font_bold {
   font-weight: bold;
 }
 
-#ofwdtpxubs .gt_font_italic {
+#dtnwraftyb .gt_font_italic {
   font-style: italic;
 }
 
-#ofwdtpxubs .gt_super {
+#dtnwraftyb .gt_super {
   font-size: 65%;
 }
 
-#ofwdtpxubs .gt_footnote_marks {
+#dtnwraftyb .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ofwdtpxubs .gt_asterisk {
+#dtnwraftyb .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ofwdtpxubs .gt_indent_1 {
+#dtnwraftyb .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ofwdtpxubs .gt_indent_2 {
+#dtnwraftyb .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ofwdtpxubs .gt_indent_3 {
+#dtnwraftyb .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ofwdtpxubs .gt_indent_4 {
+#dtnwraftyb .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ofwdtpxubs .gt_indent_5 {
+#dtnwraftyb .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ofwdtpxubs .katex-display {
+#dtnwraftyb .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ofwdtpxubs div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#dtnwraftyb div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>

@@ -8,7 +8,7 @@ For the presentation exercise, I chose to use the Halloween candy ranking set.
 
 
 ## Original Graph from "FiveThirtyEight" Halloween Candy Power Ranking 
-![](halloween_ranking.png)
+![](halloween_ranking.png){height=850px}
 
 ## Recreated Graph for Halloween Candy Power Ranking
 For this exercise I will recreate the graph given, however, I will leave all the rough draft codes that led to reproducing my graph. This is just to be able to see how certain changes, in code changed certain aspect of my recreated visual. 
