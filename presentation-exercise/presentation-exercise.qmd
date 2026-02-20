@@ -198,7 +198,7 @@ ggplot(candy_summary) +
 ```
 
 ## Summary Table: Top 10 Halloween Candies (produced by me)
-Moving forward, I wanted to a different create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset. This is not a reproduced table, instead, I decided to make a table. This is just personal practice.
+Moving forward, I wanted to a different create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset. This is not a reproduced table, instead, I decided to make a table to display the top 10 candies by winning percentages. It is taking the first 10 groups from the long original chart and placing them within a table. For this, I asked the AI to generate a table showing the top 10 Halloween candies based on win percentage from a dataset of head-to-head candy matchups. I wanted the table to be ranked and have color-coded performance. The AI produced R code using the gt package with formatted numbers, colored cells, a header, and footnotes for clarity.
 
 ```{r}
 library(dplyr)
