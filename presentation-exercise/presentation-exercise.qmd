@@ -8,9 +8,10 @@ For the presentation exercise, I chose to use the Halloween candy ranking set.
 
 
 ## Original Graph from "FiveThirtyEight" Halloween Candy Power Ranking 
-
+![](halloween_ranking.png){width=100%}
 
 ## Reproduced Graph for Halloween Candy Power Ranking
+For this exercise I will recreate the graph given, however, I will leave all the rough draft codes that led to reproducing my graph. This is just to be able to see how certain changes, in code changed certain aspect of my recreated visual. 
 ```{r}
 
 library(tidyverse)
@@ -111,9 +112,93 @@ Even with this prompt from AI, the recreated graph is having a figure size issue
  
 ```
 
+## Summary Table from "FiveThirtyEight" Halloween Candy Power Ranking 
+This table is show the average win sahre based on candy type and categories based on the ranking
 
-## Summary Table: Top 10 Halloween Candies
-Moving forward, we want to create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset.
+![](avg_win_share.png){width=100%}
+
+
+## Summary Table: Avergae Win Share (reproduced)
+```{r fig.height=10, fig.width=16}
+library(ggplot2)
+library(dplyr)
+
+candy_summary <- tibble(
+  candy_type = c("Chocolate","Fruit","Peanuts & nuts","Crispy", "Caramel","Nougat","Multi-piece","Candy bar","Hard candy"),
+  avg_win = c(61,44,57,64,60,66,41,61,47),
+  value_add = c(19.9,10.3,10.1,9.0,3.4,2.4,-0.2,-0.7,-4.9)
+)
+
+# positions for rows
+candy_summary <- candy_summary %>%
+  mutate(row = rev(row_number()))
+
+ggplot(candy_summary) +
+
+  # shaded value column
+  geom_rect(aes(
+    xmin = 2.6,
+    xmax = 4.6,
+    ymin = row - .45,
+    ymax = row + .45,
+    fill = value_add
+  ),
+  color = NA) +
+
+  # candy type column
+  geom_text(aes(x = 0, y = row, label = candy_type),
+    hjust = 0,
+    family = "serif",
+    size = 6) +
+
+  # avg win share column
+  geom_text(aes(x = 2.2, y = row,
+    label = ifelse(row == max(row),
+      paste0(avg_win, "%"),
+      avg_win)),
+            hjust = 1,
+            family = "serif",
+            size = 6) +
+
+  # value add numbers
+  geom_text(aes(x = 2.7, y = row,
+    label = sprintf("%+.1f", value_add)),
+      hjust = 0,
+      family = "serif",
+      size = 6) +
+
+  # teal to pink gradient
+  scale_fill_gradient2(
+    low = "#D9B0BC",
+    mid = "#F0F0F0",
+    high = "#4DA8A9",
+    midpoint = 0
+  ) +
+
+  coord_cartesian(xlim = c(-0.1, 4.8)) +
+
+  labs(title = NULL) +
+
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+
+  # headers in the graph
+  annotate("text", x = 0, y = max(candy_summary$row) + 1,
+    label = "CANDY TYPE",
+    family = "serif", fontface = "bold", size = 7, hjust = 0) +
+  annotate("text", x = 2.2, y = max(candy_summary$row) + 1,
+    label = "AVG. WIN SHARE",
+    family = "serif", fontface = "bold", size = 7, hjust = 1) +
+  annotate("text", x = 3.6, y = max(candy_summary$row) + 1,
+    label = "VALUE ADD TO WIN %",
+    family = "serif", fontface = "bold", size = 7, hjust = 0)
+```
+
+## Summary Table: Top 10 Halloween Candies (produced by me)
+Moving forward, I wanted to a different create publication ready table. For my dataset I presented the top 10 halloween candies based on the dataset. This is not a reproduced table, instead, I decided to make a table. 
 
 ```{r}
 library(dplyr)
@@ -168,3 +253,4 @@ top10 %>%
     locations = cells_column_labels(columns = winpercent)
   )
 ```
+
