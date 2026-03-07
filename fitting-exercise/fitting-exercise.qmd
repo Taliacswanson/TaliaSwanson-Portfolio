@@ -1,0 +1,175 @@
+# Model Fitting Exercise
+First we start by loading our data about the drug Mavoglurant.
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(here)
+
+#Load our data
+drug_data <- read_csv(here("fitting-exercise", "Mavoglurant_A2121_nmpk.csv"))
+glimpse(drug_data)
+```
+
+## Plot drug concentration over time for each individual
+```{r}
+ggplot(drug_data, aes(x = TIME, y = DV, group = ID, color = factor(DOSE))) +
+  geom_line(alpha = 0.3) +
+  labs(
+    title = "Drug Concentration Over Time",
+    x = "Time",
+    y = "Drug Concentration (DV)",
+    color = "Dose"
+  ) +
+  theme_minimal()
+```
+
+Here we separate each dosing into a separate graph for easier readability with the `facet_wrap` function.
+
+```{r}
+ggplot(drug_data, aes(x = TIME, y = DV, group = ID, color = factor(DOSE))) +
+  facet_wrap(~ DOSE) +
+  geom_line(alpha = 0.3) +
+  labs(
+    title = "Drug Concentration Over Time",
+    x = "Time",
+    y = "Drug Concentration (DV)",
+    color = "Dose"
+  ) +
+  theme_minimal()
+```
+
+This plot shows drug concentration (DV) over time for each participant. Each line represents one individual, and colors indicate different dose levels. Overall, higher doses appear to produce igher drug concentrations over time.
+
+## Keep only the first dosing occasion
+The dataset contains an indicator variable OCC representing dosing occasions. Some individuals received the drug more than once (OCC = 1 and OCC = 2). Since the difference between occasions is unclear and we want to avoid complications from repeated dosing, I retain only observations where OCC = 1. This ensures that the data from the participants, is from only one dosing occasion.
+```{r}
+drug_occ1 <- drug_data %>%
+  filter(OCC == 1)
+
+glimpse(drug_occ1)
+```
+
+## Remove dosing rows and compute total drug exposure
+```{r}
+y_data <- drug_occ1 %>%
+  filter(TIME != 0) %>%
+  group_by(ID) %>%
+  summarize(Y = sum(DV), .groups = "drop")
+
+dim(y_data)
+```
+
+To summarize drug exposure for each participant, total drug concentration across was calcualtes acrosss measured time points. This value is labeled as Y, and represents drug concentration for each individual.
+
+```{r}
+# Keep the dosing rows, (TIME = 0)
+dose_rows <- drug_occ1 %>%
+  filter(TIME == 0)
+
+dim(dose_rows)
+```
+
+Observations where TIME = 0 correspond to the dosing event for each individual. These rows contain participant characteristics such as dose, age, sex, race, weight, and height. I extract these rows so they can later be merged with the total (calculated) drug exposure variable.
+
+## Merge exposure with participant characteristics
+```{r}
+# Drug exposure with the participant characteristics
+analysis_data <- left_join(y_data, dose_rows, by = "ID")
+
+dim(analysis_data)
+```
+
+```{r}
+analysis_data <- analysis_data %>%
+  mutate(
+    SEX = factor(SEX),
+    RACE = factor(RACE)
+  ) %>%
+  select(Y, DOSE, AGE, SEX, RACE, WT, HT)
+
+glimpse(analysis_data)
+```
+
+The total exposure variables, labled Y, is merged with participant characteristics by participant ID and pcreate a dataset where each row represents a participant with their demographic characteristic and total drug exposure
+
+## Summary Statistics 
+I begin by examining summary statistics for the cleaned dataset to understand the general distribution of the variables and check for unusual values.
+```{r}
+summary(analysis_data)
+```
+
+# Exploratory Analysis
+```{r}
+# Histogram
+ggplot(analysis_data, aes(x = Y)) +
+  geom_histogram(bins = 30) +
+  theme_minimal() +
+  labs(title = "Distribution of Total Drug Concentration")
+```
+
+The histogram displays the distribution of total drug exposure (Y). The distribution appears to be skewed right, which is common for pharmacokinetic measurements where some individuals experience higher exposure than others.
+
+```{r}
+# Scatterplot by dose
+ggplot(analysis_data, aes(x = DOSE, y = Y)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Total Drug Exposure vs Dose")
+```
+
+This scatterplot looks at the relationship between dose and total drug exposure. Higher doses tend to correspond with higher total exposure, indicating a positive relationship between age and total drug exposure.
+
+```{r}
+# Scatterplot by age 
+ggplot(analysis_data, aes(x = AGE, y = Y)) +
+  geom_point() +
+  theme_minimal()
+```
+
+This plot looks whether age is associated with total drug exposure. There does not appear to be a strong relationship between age and total drug exposure in this dataset as the results are extremely varibale.
+
+```{r}
+# pairs plots
+pairs(analysis_data[, c("Y","DOSE","AGE","WT","HT")])
+```
+
+The pair plot allows visual modeling of relationships among several continuous variables at once. Dose appears to be the variable most clearly related to total drug exposure, while other variables such as age, weight, and height show weaker relationships.
+
+# Model Fitting
+Now we will focus on more modeling fitting for this Mavogulrant dataset.
+
+## Linear Model with Y - DOSE
+```{r}
+# Linear regression with Y as outcome and DOSE as predictor
+lm_fit <- lm(Y ~ DOSE, data = analysis_data)
+summary(lm_fit)  # shows coefficients and R-squared
+```
+
+This linear model examines the relationship between drug dose and total drug exposure (Y). The model explains approximately 51.6% of variation in total drug exposure. The overall model is statistically significant (F=125.6, p <0.001), indicating that dose is an important prediciotr of total drug exposure in this dataset
+
+## Linear Model with Y - All Predictors 
+```{r}
+# Linear regression with Y as outcome and all predictors
+lm_all <- lm(Y ~ DOSE + AGE + SEX + RACE + WT + HT, data = analysis_data)
+summary(lm_all)
+```
+
+This linear regression model includes dose with additional characteristics (age, sex, race, weight, and height) to predict total drug exposure. The model explain approximately 61.9% of the variation in total drug exposure, higher than the model including only dose. The overal model is staistically significant (F=22.57, p,0.001) which sugest that the predictors altogether help to explain variation in drug exposure.
+
+## Logistic Model with SEX - DOSE 
+```{r}
+# Logistic regression with SEX as outcome and DOSE as predictor
+log_fit <- glm(SEX ~ DOSE, data = analysis_data, family = binomial)
+summary(log_fit)
+```
+
+This logistic regression model looks at whether drug dose predicts participant sex. The coefficient for dose is not statistically significant (p = 0.192), indicating that dose is not associated with sex in this dataset. Additionally, the small change between the null deviance and residual deviance suggests that dose does not substantially improve the model's ability to predict sex. However, this can be expected as drug dose is not related to participant sex. 
+
+## Logistic Model with SEX - All Predictors
+```{r}
+# Logistic regression with SEX as outcome and all predictors
+log_all <- glm(SEX ~ DOSE + AGE + RACE + WT + HT + Y, data = analysis_data, family = binomial)
+summary(log_all)
+```
+
+This logistic regression model includes dose, age, race, weight, height, and total drug exposure (Y) to predict participant sex. Most predictors are not statistically significant, indicating that these variables do not strongly explain differences in sex in this dataset. Height is the only predictor that appears statistically significant (p = 0.0027), indicating it may be associated with sex. Overall, many predictors do not contribute to predicting sex.
