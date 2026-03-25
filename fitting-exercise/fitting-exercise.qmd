@@ -181,7 +181,7 @@ rsq_lm_all
 
 ```
 
-When including all predictors, the RMSE decreases and R-squared increases slightly, suggesting that age, sex, race, weight, and height add some additional explanatory power beyond dose alone.
+The model using only DOSE has an RMSE of 666.5 and explains about 51.6% of the variation in total drug exposure (R² = 0.516). When all predictors are included, the RMSE decreases to 590.9 and the R² increases to 0.619. This indicates that adding AGE, SEX, RACE, WT, and HT improves the model’s ability to predict drug exposure. Overall, the full model provides a better fit than the dose-only model.
 
 ## Logistic Model with SEX - DOSE 
 ```{r}
