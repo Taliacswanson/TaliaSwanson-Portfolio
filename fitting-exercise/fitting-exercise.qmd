@@ -1,4 +1,6 @@
 # Model Fitting Exercise
+
+## Load Data
 First we start by loading our data about the drug Mavoglurant.
 ```{r}
 library(tidyverse)
@@ -9,6 +11,8 @@ library(here)
 drug_data <- read_csv(here("fitting-exercise", "Mavoglurant_A2121_nmpk.csv"))
 glimpse(drug_data)
 ```
+
+The dataset contains 2,678 observations and 17 variables. Each row represents a measurement at a specific time point for a participant. Key variables include ID for participant identification, DV for measured drug concentration, TIME for when the measurement occurred, DOSE for administered dose, and OCC for dosing occasion. Participant characteristics such as AGE, SEX, RACE, WT (weight), and HT (height) are also included. 
 
 ## Plot drug concentration over time for each individual
 ```{r}
@@ -23,6 +27,7 @@ ggplot(drug_data, aes(x = TIME, y = DV, group = ID, color = factor(DOSE))) +
   theme_minimal()
 ```
 
+### Facet by Dose
 Here we separate each dosing into a separate graph for easier readability with the `facet_wrap` function.
 
 ```{r}
@@ -90,7 +95,7 @@ analysis_data <- analysis_data %>%
 glimpse(analysis_data)
 ```
 
-The total exposure variables, labled Y, is merged with participant characteristics by participant ID and pcreate a dataset where each row represents a participant with their demographic characteristic and total drug exposure
+The total exposure variables, labled Y, is merged with participant characteristics by participant ID and create a dataset where each row represents a participant with their demographic characteristic and total drug exposure.
 
 ## Summary Statistics 
 I begin by examining summary statistics for the cleaned dataset to understand the general distribution of the variables and check for unusual values.
@@ -98,7 +103,7 @@ I begin by examining summary statistics for the cleaned dataset to understand th
 summary(analysis_data)
 ```
 
-# Exploratory Analysis
+# Exploratory Analysis (EDA)
 ```{r}
 # Histogram
 ggplot(analysis_data, aes(x = Y)) +
@@ -107,7 +112,7 @@ ggplot(analysis_data, aes(x = Y)) +
   labs(title = "Distribution of Total Drug Concentration")
 ```
 
-The histogram displays the distribution of total drug exposure (Y). The distribution appears to be skewed right, which is common for pharmacokinetic measurements where some individuals experience higher exposure than others.
+The histogram displays the distribution of total drug exposure (Y). The distribution appears to be skewed right, which is common for pharmacokinetic measurements where some individuals experience higher exposure than others. Most participants exposure values between ~1700 and ~3050.
 
 ```{r}
 # Scatterplot by dose
@@ -117,7 +122,7 @@ ggplot(analysis_data, aes(x = DOSE, y = Y)) +
   labs(title = "Total Drug Exposure vs Dose")
 ```
 
-This scatterplot looks at the relationship between dose and total drug exposure. Higher doses tend to correspond with higher total exposure, indicating a positive relationship between age and total drug exposure.
+This scatterplot looks at the relationship between dose and total drug exposure. Higher doses tend to correspond with higher total exposure, indicating a positive relationship between dose and total drug exposure.
 
 ```{r}
 # Scatterplot by age 
@@ -133,7 +138,8 @@ This plot looks whether age is associated with total drug exposure. There does n
 pairs(analysis_data[, c("Y","DOSE","AGE","WT","HT")])
 ```
 
-The pair plot allows visual modeling of relationships among several continuous variables at once. Dose appears to be the variable most clearly related to total drug exposure, while other variables such as age, weight, and height show weaker relationships.
+The pairwise plots show that dose appears to have the strongest relationship with total drug exposure (Y),
+while other variables such as age, weight, and height show weaker relationships with (Y)
 
 # Model Fitting
 Now we will focus on more modeling fitting for this Mavogulrant dataset.
@@ -145,7 +151,7 @@ lm_fit <- lm(Y ~ DOSE, data = analysis_data)
 summary(lm_fit)  # shows coefficients and R-squared
 ```
 
-This linear model examines the relationship between drug dose and total drug exposure (Y). The model explains approximately 51.6% of variation in total drug exposure. The overall model is statistically significant (F=125.6, p <0.001), indicating that dose is an important prediciotr of total drug exposure in this dataset
+This linear regression examines the relationship between dose (DOSE) and total drug exposure (Y). The estimated coefficient for dose is 58.2, meaning that for each additional unit of dose, total exposure increases by about 58 units on average, holding everything else constant. The model explains roughly 52% of the variation in exposure (R² = 0.516), and the F-test for the overall model is highly significant (F = 125.6, p < 0.001), indicating that dose is a meaningful predictor of total drug exposure in this dataset. The residuals suggest moderate variability around the fitted values, so while dose is important, other factors may also contribute to differences in exposure.
 
 ## Linear Model with Y - All Predictors 
 ```{r}
@@ -156,6 +162,27 @@ summary(lm_all)
 
 This linear regression model includes dose with additional characteristics (age, sex, race, weight, and height) to predict total drug exposure. The model explain approximately 61.9% of the variation in total drug exposure, higher than the model including only dose. The overal model is staistically significant (F=22.57, p,0.001) which sugest that the predictors altogether help to explain variation in drug exposure.
 
+```{r}
+# Compute RMSE and R-squared for the DOSE model
+pred_lm <- predict(lm_fit, analysis_data)
+rmse_lm <- yardstick::rmse_vec(truth = analysis_data$Y, estimate = pred_lm)
+rsq_lm <- yardstick::rsq_vec(truth = analysis_data$Y, estimate = pred_lm)
+
+rmse_lm
+rsq_lm
+
+# Y ~ All Predictors
+pred_lm_all <- predict(lm_all, analysis_data)
+rmse_lm_all <- yardstick::rmse_vec(truth=analysis_data$Y, estimate=pred_lm_all)
+rsq_lm_all <- yardstick::rsq_vec(truth=analysis_data$Y, estimate=pred_lm_all)
+
+rmse_lm_all
+rsq_lm_all
+
+```
+
+When including all predictors, the RMSE decreases and R-squared increases slightly, suggesting that age, sex, race, weight, and height add some additional explanatory power beyond dose alone.
+
 ## Logistic Model with SEX - DOSE 
 ```{r}
 # Logistic regression with SEX as outcome and DOSE as predictor
@@ -165,6 +192,34 @@ summary(log_fit)
 
 This logistic regression model looks at whether drug dose predicts participant sex. The coefficient for dose is not statistically significant (p = 0.192), indicating that dose is not associated with sex in this dataset. Additionally, the small change between the null deviance and residual deviance suggests that dose does not substantially improve the model's ability to predict sex. However, this can be expected as drug dose is not related to participant sex. 
 
+```{r}
+# Predicted probabilities
+pred_prob <- predict(log_fit, analysis_data, type = "response")
+
+# Convert to predicted classes
+pred_class <- ifelse(pred_prob > 0.5, 2, 1)
+pred_class <- factor(pred_class, levels = c(1, 2))
+sex_factor <- factor(analysis_data$SEX, levels = c(1, 2))
+
+# Accuracy
+accuracy_log <- yardstick::accuracy_vec(
+  truth = sex_factor,
+  estimate = pred_class
+)
+
+accuracy_log
+
+# ROC-AUC
+roc_auc_log <- yardstick::roc_auc_vec(
+  truth = factor(sex_numeric),
+  estimate = pred_prob
+)
+roc_auc_log
+```
+
+ROC-AUC evaluates how well the model distinguishes between the two categories of sex. A value close to 0.5 suggests that the model performs little better than random guessing. 
+
+
 ## Logistic Model with SEX - All Predictors
 ```{r}
 # Logistic regression with SEX as outcome and all predictors
@@ -173,3 +228,30 @@ summary(log_all)
 ```
 
 This logistic regression model includes dose, age, race, weight, height, and total drug exposure (Y) to predict participant sex. Most predictors are not statistically significant, indicating that these variables do not strongly explain differences in sex in this dataset. Height is the only predictor that appears statistically significant (p = 0.0027), indicating it may be associated with sex. Overall, many predictors do not contribute to predicting sex.
+
+```{r}
+# Predicted probabilities for full logistic model
+pred_prob_all <- predict(log_all, analysis_data, type = "response")
+
+# Convert to predicted classes
+pred_class_all <- ifelse(pred_prob_all > 0.5, 2, 1)
+
+# Convert to factors with same levels
+pred_class_all <- factor(pred_class_all, levels = c(1, 2))
+sex_factor <- factor(analysis_data$SEX, levels = c(1, 2))
+
+# Accuracy
+accuracy_log_all <- yardstick::accuracy_vec(
+  truth = factor(sex_numeric),
+  estimate = factor(pred_class_all)
+)
+accuracy_log_all
+
+roc_auc_log_all <- yardstick::roc_auc_vec(
+  truth = sex_factor,
+  estimate = pred_prob_all
+)
+roc_auc_log_all
+```
+
+The full logistic model predicts sex with high accuracy (94.2%), meaning most participants are classified correctly. However, the ROC-AUC is very low (0.02), indicating the model performs poorly at distinguishing between males and females. This mismatch occurs because the dataset is heavily imbalanced (many more males than females). Essentially, while the model “guesses” correctly most of the time, it does not truly capture differences between the sexes.
