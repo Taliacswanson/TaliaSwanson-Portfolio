@@ -43,7 +43,7 @@ ggplot(drug_data, aes(x = TIME, y = DV, group = ID, color = factor(DOSE))) +
   theme_minimal()
 ```
 
-This plot shows drug concentration (DV) over time for each participant. Each line represents one individual, and colors indicate different dose levels. Overall, higher doses appear to produce igher drug concentrations over time.
+This plot shows drug concentration (DV) over time for each participant. Each line represents one individual, and colors indicate different dose levels. Overall, higher doses appear to produce higher drug concentrations over time.
 
 ## Keep only the first dosing occasion
 The dataset contains an indicator variable OCC representing dosing occasions. Some individuals received the drug more than once (OCC = 1 and OCC = 2). Since the difference between occasions is unclear and we want to avoid complications from repeated dosing, I retain only observations where OCC = 1. This ensures that the data from the participants, is from only one dosing occasion.
@@ -64,7 +64,7 @@ y_data <- drug_occ1 %>%
 dim(y_data)
 ```
 
-To summarize drug exposure for each participant, total drug concentration across was calcualtes acrosss measured time points. This value is labeled as Y, and represents drug concentration for each individual.
+To summarize drug exposure for each participant, total drug concentration across was calcualtes across measured time points. This value is labeled as Y, and represents drug concentration for each individual.
 
 ```{r}
 # Keep the dosing rows, (TIME = 0)
@@ -151,7 +151,8 @@ lm_fit <- lm(Y ~ DOSE, data = analysis_data)
 summary(lm_fit)  # shows coefficients and R-squared
 ```
 
-This linear regression examines the relationship between dose (DOSE) and total drug exposure (Y). The estimated coefficient for dose is 58.2, meaning that for each additional unit of dose, total exposure increases by about 58 units on average, holding everything else constant. The model explains roughly 52% of the variation in exposure (R² = 0.516), and the F-test for the overall model is highly significant (F = 125.6, p < 0.001), indicating that dose is a meaningful predictor of total drug exposure in this dataset. The residuals suggest moderate variability around the fitted values, so while dose is important, other factors may also contribute to differences in exposure.
+This linear regression examines the relationship between dose (DOSE) and total drug exposure (Y). 
+The estimated coefficient for dose is 58.2, meaning that for each additional unit increase in dose, total drug exposure increases by approximately 58 units on average. The model explains roughly 52% of the variation in exposure (R² = 0.516), and the F-test for the overall model is highly significant (F = 125.6, p < 0.001), indicating that dose is a meaningful predictor of total drug exposure in this dataset. The residuals suggest moderate variability around the fitted values, so while dose is important, other factors may also contribute to differences in exposure.
 
 ## Linear Model with Y - All Predictors 
 ```{r}
@@ -160,7 +161,7 @@ lm_all <- lm(Y ~ DOSE + AGE + SEX + RACE + WT + HT, data = analysis_data)
 summary(lm_all)
 ```
 
-This linear regression model includes dose with additional characteristics (age, sex, race, weight, and height) to predict total drug exposure. The model explain approximately 61.9% of the variation in total drug exposure, higher than the model including only dose. The overal model is staistically significant (F=22.57, p,0.001) which sugest that the predictors altogether help to explain variation in drug exposure.
+This linear regression model includes dose with additional characteristics (age, sex, race, weight, and height) to predict total drug exposure. The model explains approximately 61.9% of the variation in total drug exposure, higher than the model including only dose. The overall model is statistically significant (F=22.57, p < 0.001) which sugest that the predictors altogether help to explain variation in drug exposure.
 
 ```{r}
 # Compute RMSE and R-squared for the DOSE model
@@ -211,7 +212,7 @@ accuracy_log
 
 # ROC-AUC
 roc_auc_log <- yardstick::roc_auc_vec(
-  truth = factor(sex_numeric),
+  truth = sex_factor,
   estimate = pred_prob
 )
 roc_auc_log
@@ -255,3 +256,134 @@ roc_auc_log_all
 ```
 
 The full logistic model predicts sex with high accuracy (94.2%), meaning most participants are classified correctly. However, the ROC-AUC is very low (0.02), indicating the model performs poorly at distinguishing between males and females. This mismatch occurs because the dataset is heavily imbalanced (many more males than females). Essentially, while the model “guesses” correctly most of the time, it does not truly capture differences between the sexes.
+
+## Prepare Data for Modeling
+```{r}
+rngseed <- 1234
+```
+
+For this exercise, the RACE variable is removed due to irreuglar values. The dataset now contains 120 observations and six variables: Y, DOSE, AGE, SEX, WT, and HT. There are now 120 observations in the dataset.
+```{r}
+analysis_data2 <- analysis_data %>%
+  select(Y, DOSE, AGE, SEX, WT, HT)
+
+  glimpse(analysis_data2)
+```
+
+```{r}
+set.seed(rngseed)
+
+data_split <- initial_split(analysis_data2, prop = 0.75)
+
+train_data <- training(data_split)
+test_data  <- testing(data_split)
+
+dim(train_data)
+dim(test_data)
+```
+
+The data are randomly split into a training set (75%) and a test set (25%). The training data will be used to fit models, while the test data will be used for the final evaluation.
+
+## Model Fitting Using Training Data
+
+### Model 1: DOSE Only
+```{r}
+model1_spec <- linear_reg() %>%
+  set_engine("lm")
+
+model1_fit <- model1_spec %>%
+  fit(Y ~ DOSE, data = train_data)
+
+model1_fit
+```
+
+### Model 2: All Predictors
+```{r}
+model2_spec <- linear_reg() %>%
+  set_engine("lm")
+
+model2_fit <- model2_spec %>%
+  fit(Y ~ DOSE + AGE + SEX + WT + HT, data = train_data)
+
+model2_fit
+```
+
+## Model Performance on Training Data
+To evaluate model performance on the training data, predictions are generated for each model and compared with the observed values of total drug exposure (Y). The root mean squared error (RMSE) measures the average magnitude of prediction error, with lower values indicating better predictive accuracy. By comparing RMSE values across models, we can assess whether including additional predictors improves the model's ability to explain variation in drug exposure.
+```{r}
+pred1 <- predict(model1_fit, train_data) %>%
+  bind_cols(train_data)
+
+pred2 <- predict(model2_fit, train_data) %>%
+  bind_cols(train_data)
+
+rmse_model1 <- rmse(pred1, truth = Y, estimate = .pred)
+rmse_model2 <- rmse(pred2, truth = Y, estimate = .pred)
+
+rmse_model1
+rmse_model2
+```
+
+The model using dose as the only predictor produces an RMSE of approximately 703. When additional participant characteristics (AGE, SEX, WT, and HT) are included, the RMSE decreases to about 627. This reduction in prediction error suggests that incorporating variables improves the model's ability to predict total drug exposure compared with using dose alone.
+
+## Null Model
+To provide a baseline for comparison, a null model is constructed. The null model predicts total drug exposure for every participant using only the mean value of Y from the training data. This model contains no predictors and represents the simplest possible prediction approach. Comparing the RMSE of the fitted models to the null model allows us to determine whether the predictors meaningfully improve prediction accuracy.
+
+```{r}
+mean_y <- mean(train_data$Y)
+
+null_pred <- rep(mean_y, nrow(train_data))
+
+rmse_null <- yardstick::rmse_vec(
+  truth = train_data$Y,
+  estimate = null_pred
+)
+
+rmse_null
+```
+
+The null model produces an RMSE of about 948, meaning predictions based only on the mean outcome perform poorly. This indicates that models including predictors such as dose and participant characteristics provide much more accurate predictions than simply using the average exposure value for all individuals.
+
+## Cross-Validation
+Although RMSE calculated on the training data provides an estimate of model fit, it may underestimate error because the models were evaluated on the same data used for fitting. To better assess how well the models generalize to new data, 10-fold cross-validation is performed. In this procedure, the training data are divided into ten subsets (folds). The model is repeatedly trained on nine folds and evaluated on the remaining fold, and this process is repeated until each fold has served as the validation set.
+
+```{r}
+set.seed(rngseed)
+
+cv_folds <- vfold_cv(train_data, v = 10)
+```
+
+### Fit Models with Cross-Validation
+
+```{r}
+model1_cv <- fit_resamples(
+  model1_spec,
+  Y ~ DOSE,
+  resamples = cv_folds,
+  metrics = metric_set(rmse)
+)
+
+model2_cv <- fit_resamples(
+  model2_spec,
+  Y ~ DOSE + AGE + SEX + WT + HT,
+  resamples = cv_folds,
+  metrics = metric_set(rmse)
+)
+```
+
+### Cross-Validation Results
+
+```{r}
+collect_metrics(model1_cv)
+collect_metrics(model2_cv)
+```
+
+The cross-validation results provide an estimate of model prediction error on unseen, new data. The dose-only model has a cross-validated RMSE of approximately 691, while the full model including additional predictors has a lower RMSE of about 646. These results are consistent with the training RMSE values and suggest that the full model provides better predictive performance while maintaining reasonable generalizability.
+
+### Changing the Random Seed
+```{r}
+rngseed <- 4321
+set.seed(rngseed)
+
+cv_folds2 <- vfold_cv(train_data, v = 10)
+```
