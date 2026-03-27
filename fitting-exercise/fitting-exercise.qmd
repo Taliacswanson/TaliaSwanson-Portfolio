@@ -534,4 +534,4 @@ ggplot(plot_df, aes(x = Y)) +
   theme_minimal()
 ```
 
-The model does a decent job overall since the points follow the diagonal trend, but there’s still a lot of scatter, so it’s not super accurate. The uncertainty (error bars) gets bigger at higher values, meaning the model is less reliable there. Also, the model tends to underpredict for large values of Y, which we also saw in the residual plot. This suggests the model might be missing something or that the relationship isn’t fully linear.
+The model does okay overall since the points follow the diagonal, but there’s still a lot of scatter so it’s not super accurate. The error bars get bigger at higher values, so it’s less reliable there. You can also see it tends to underpredict the bigger values since a lot of points fall below the line.
