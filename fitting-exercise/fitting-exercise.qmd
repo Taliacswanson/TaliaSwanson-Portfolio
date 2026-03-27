@@ -231,23 +231,26 @@ summary(log_all)
 This logistic regression model includes dose, age, race, weight, height, and total drug exposure (Y) to predict participant sex. Most predictors are not statistically significant, indicating that these variables do not strongly explain differences in sex in this dataset. Height is the only predictor that appears statistically significant (p = 0.0027), indicating it may be associated with sex. Overall, many predictors do not contribute to predicting sex.
 
 ```{r}
+library(yardstick)
+
 # Predicted probabilities for full logistic model
 pred_prob_all <- predict(log_all, analysis_data, type = "response")
 
-# Convert to predicted classes
+# Convert to predicted classes using 0.5 cutoff
 pred_class_all <- ifelse(pred_prob_all > 0.5, 2, 1)
-
-# Convert to factors with same levels
 pred_class_all <- factor(pred_class_all, levels = c(1, 2))
+
+# Convert true SEX to factor
 sex_factor <- factor(analysis_data$SEX, levels = c(1, 2))
 
 # Accuracy
 accuracy_log_all <- yardstick::accuracy_vec(
-  truth = factor(sex_numeric),
-  estimate = factor(pred_class_all)
+  truth = sex_factor,
+  estimate = pred_class_all
 )
 accuracy_log_all
 
+# ROC AUC
 roc_auc_log_all <- yardstick::roc_auc_vec(
   truth = sex_factor,
   estimate = pred_prob_all
@@ -535,3 +538,46 @@ ggplot(plot_df, aes(x = Y)) +
 ```
 
 The model does okay overall since the points follow the diagonal, but there’s still a lot of scatter so it’s not super accurate. The error bars get bigger at higher values, so it’s less reliable there. You can also see it tends to underpredict the bigger values since a lot of points fall below the line.
+
+# Part 3 
+We start by loading the dataset and preparing it for analysis. This section includes evaluating model performance to assess how well our models explain the outcome and how they generalize to new data.
+```{r}
+library(tidyverse)
+library(tidymodels)
+
+# Predict on test data using your previously fitted model2
+pred_test <- predict(model2_fit, new_data = test_data) %>%
+  bind_cols(test_data)
+
+# Predict on training data again for comparison
+pred_train <- predict(model2_fit, new_data = train_data) %>%
+  bind_cols(train_data)
+```
+
+```{r}
+all_preds <- bind_rows(
+  pred_train %>% mutate(dataset = "Train"),
+  pred_test %>% mutate(dataset = "Test")
+)
+
+# Plot predicted vs observed
+ggplot(all_preds, aes(x = .pred, y = Y, color = dataset, shape = dataset)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  labs(x = "Predicted Y", y = "Observed Y", 
+       title = "Predicted vs Observed: Training vs Test Data") +
+  theme_minimal()
+```
+
+The predicted vs observed plot shows that both training and test data point generlly follow the 45-degree line, indicating that the model capture the overall relationship between predictors and drug exposure. The similar spread between trainng and test data suggest that generalization is reasonable despite the increase in variability at higher values.
+
+```{r}
+rmse_train <- rmse(pred_train, truth = Y, estimate = .pred)
+rmse_test  <- rmse(pred_test, truth = Y, estimate = .pred)
+
+rmse_train
+rmse_test
+```
+
+The RMSE for the training data (520) is lower than the test data (627), indicating that the model performs better on than the data it was trained on. The increase in RMSE for the test data suggests some loss of accuracy on the new data.
+
