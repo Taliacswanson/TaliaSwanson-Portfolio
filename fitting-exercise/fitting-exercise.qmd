@@ -387,3 +387,151 @@ set.seed(rngseed)
 
 cv_folds2 <- vfold_cv(train_data, v = 10)
 ```
+
+**This section added by Aylla von Ermland**
+
+Creating predictions for all 3 models (training data):
+
+model1_fit (DOSE only)
+model2_fit (all predictors)
+mean_y (null model)
+
+```{r}
+# Model 1 predictions (DOSE only)
+pred_m1 <- predict(model1_fit, train_data) %>%
+  bind_cols(train_data %>% select(Y)) %>%
+  mutate(model = "DOSE only")
+
+# Model 2 predictions (all predictors)
+pred_m2 <- predict(model2_fit, train_data) %>%
+  bind_cols(train_data %>% select(Y)) %>%
+  mutate(model = "All predictors")
+
+# Null model predictions
+pred_null <- train_data %>%
+  mutate(
+    .pred = mean_y,
+    model = "Null model"
+  ) %>%
+  select(Y, .pred, model)
+```
+
+Combine into one dataset and plotting observed vs predicted:
+
+```{r}
+pred_all <- bind_rows(pred_m1, pred_m2, pred_null)
+
+ggplot(pred_all, aes(x = Y, y = .pred, color = model)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_cartesian(xlim = c(0, 5000), ylim = c(0, 5000)) +
+  labs(
+    title = "Observed vs predicted values",
+    x = "Observed (Y)",
+    y = "Predicted",
+    color = "Model"
+  ) +
+  theme_minimal()
+```
+
+The null model produces a horizontal line because all predictions are equal to the mean outcome. The dose-only model produces three horizontal bands corresponding to the discrete dose levels, indicating that predictions depend only on dose. The model including all predictors performs best, with points more closely aligned to the 45-degree line, although substantial variability remains. Notably, the model tends to underpredict higher observed values, suggesting potential model misspecification or nonlinear relationships.
+
+**Model predictions and uncertainty:**
+
+```{r}
+set.seed(rngseed)
+
+boot_data <- bootstraps(train_data, times = 100)
+```
+
+```{r}
+library(purrr)
+
+# Generate predictions for model 2 on training data
+pred_model2 <- predict(model2_fit, train_data) %>%
+  bind_cols(train_data)
+
+# Compute residuals
+residual_df <- pred_model2 %>%
+  mutate(residual = .pred - Y)
+
+# Plot residuals vs predicted
+ggplot(residual_df, aes(x = .pred, y = residual)) +
+  geom_point(alpha = 0.6, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  coord_cartesian(ylim = c(-2500, 2500)) +
+  labs(
+    title = "Residuals vs predicted Values (model 2)",
+    x = "Predicted values",
+    y = "Residuals"
+  ) +
+  theme_minimal()
+```
+
+The residuals are pretty spread out, so the model isn’t super precise. The model isn’t fully capturing the pattern in the data and might be missing something or be too simple.
+
+```{r}
+library(rsample)
+
+set.seed(rngseed)
+
+# Create bootstrap samples
+boot_obj <- bootstraps(train_data, times = 100)
+
+# Pre-allocate matrix
+pred_bs <- matrix(NA, nrow = 100, ncol = nrow(train_data))
+
+# Loop through bootstrap samples
+for (i in seq_len(100)) {
+  
+  boot_sample <- analysis(boot_obj$splits[[i]])
+  
+  # Fit model using lm (safe + numeric output)
+  fit_boot <- lm(Y ~ DOSE + AGE + SEX + WT + HT, data = boot_sample)
+  
+  # Store predictions 
+  pred_bs[i, ] <- predict(fit_boot, newdata = train_data)
+}
+```
+
+Compute uncertainty:
+```{r}
+# Quantiles: 89% CI + median
+pred_summary <- apply(pred_bs, 2, quantile, probs = c(0.055, 0.5, 0.945))
+
+pred_summary <- t(pred_summary)
+pred_summary <- as.data.frame(pred_summary)
+
+colnames(pred_summary) <- c("lower", "median", "upper")
+```
+
+Combine with original predictors:
+```{r}
+# Original predictions (tidymodels → extract .pred)
+orig_pred <- predict(model2_fit, train_data)$.pred
+
+plot_df <- train_data %>%
+  mutate(
+    pred_point = orig_pred,
+    lower = pred_summary$lower,
+    median = pred_summary$median,
+    upper = pred_summary$upper
+  )
+```
+Plot for uncertainty visualization:
+```{r}
+ggplot(plot_df, aes(x = Y)) +
+  geom_point(aes(y = pred_point), color = "black", alpha = 0.6) +
+  geom_point(aes(y = median), color = "black", alpha = 0.6) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), color = "black", alpha = 0.4) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_cartesian(xlim = c(0, 5000), ylim = c(0, 5000)) +
+  labs(
+    title = "Observed vs predicted with Bootstrap",
+    x = "Observed values",
+    y = "Predicted values"
+  ) +
+  theme_minimal()
+```
+
+The model does a decent job overall since the points follow the diagonal trend, but there’s still a lot of scatter, so it’s not super accurate. The uncertainty (error bars) gets bigger at higher values, meaning the model is less reliable there. Also, the model tends to underpredict for large values of Y, which we also saw in the residual plot. This suggests the model might be missing something or that the relationship isn’t fully linear.
