@@ -21,7 +21,11 @@ glimpse(data)
 ```{r}
 glimpse(data)        # see the structure
 summary(data)        # quick summary of numeric variables
+colnames(data)
 ```
+
+The dataset used here did not contain a RACE variable, so this step was not not applicable.
+
 
 ## Pairwise Correlations
 ```{r}
@@ -38,6 +42,9 @@ data <- data %>%
   mutate(BMI = 703 * WT / (HT^2))
 ```
 
+BMI was created combining height and weight, which may better capture body composition than heght or weight alone.
+
+
 ## Preparing the Data for Modeling
 ```{r}
 # Recipe
@@ -46,7 +53,7 @@ rec <- recipe(Y ~ ., data = data) %>%
 ```
 
 ## Fitting the Models
-Linear Model
+
 ```{r}
 lin_mod <- linear_reg() %>%
   set_engine("lm")
@@ -60,12 +67,11 @@ lin_pred <- predict(lin_fit, data) %>% bind_cols(data)
 lin_pred
 ```
 
-RMSE
 ```{r}
 rmse(lin_pred, truth = Y, estimate = .pred)
 ```
 
-The linear model provides a baseline for comaprison. It assumes a linear relationship between predictors and the outcome. The RMSE from this model is approximately 581, providing a reference point for evaluating more flexible models.
+The linear model provides a baseline for comparison. It assumes a linear relationship between predictors and the outcome. The RMSE from this model is approximately 581, providing a reference point for evaluating more flexible models.
 
 
 ```{r}
@@ -81,7 +87,7 @@ lasso_pred <- predict(lasso_fit, data) %>% bind_cols(data)
 rmse(lasso_pred, truth = Y, estimate = .pred)
 ```
 
-The LASSO regression produces an RMSE of approxiamtely 582, which very similar RMSE to the linear model. This is expected because the penalty parameter is small, meaning that the model behaves similarly to a standard linear regression.
+The LASSO regression produces an RMSE of approximately 582, which very similar RMSE to the linear model. This is expected because the penalty parameter is small, meaning that the model behaves similarly to a standard linear regression.
 
 
 ```{r}
@@ -118,12 +124,36 @@ plot_pred(lasso_pred)
 plot_pred(rf_pred)
 ```
 
-The observed versus predicted plots show that the random forest predicitons are generally closer to the 45-degree line 
-compared to the linear and LASSO models. This indicates better performance within the model as more predicitons closely match the observed values.
+The observed versus predicted plots show that the random forest predictions are generally closer to the 45-degree line 
+compared to the linear and LASSO models. This indicates better performance within the model as more predictions closely match the observed values.
 
 # Tuning
 
 ## LASSO tuning (no cv) 
+
+```{r}
+# Recipe (SEX)
+model_recipe <- recipe(Y ~ ., data = data) %>%
+  step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%
+  step_zv(all_predictors())
+
+# LASSO model (tunable)
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+# LASSO workflow
+lasso_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(model_recipe)
+```
+
+## Defining your penalty grid
+```{r}
+penalty_grid <- tibble(
+  penalty = 10^seq(-5, 2, length.out = 50)
+)
+```
+
 ```{r}
 # Apparent resampling (full dataset)
 resamples_app <- apparent(data)
@@ -137,14 +167,29 @@ lasso_tune_res <- tune_grid(
 )
 ```
 
-As the LASSO penalty increase, teh RMSE increases. This is expected as larger penalities shrink the coefficients toward zero, which reduces model flexibility and can underfit the data. With smaller penalties, the model behaves more like a standard linear regression. This gives a general look at how penalty values affect model performance, however cross-validation is needed for reliable estimates. 
+As the LASSO penalty increases, the RMSE increases. This is expected because larger penalties shrink coefficients toward zero, reducing model flexibility and potentially leading to underfitting. With smaller penalties, the model behaves more like a standard linear regression.
+
+However, this tuning is performed on the full dataset without cross-validation, meaning the model is evaluated on the same data used for training. This leads to overly optimistic performance estimates and increases the risk of overfitting.
 
 ```{r}
-# Cross-validation
-cv_folds <- vfold_cv(data, v = 5, repeats = 5)
+# Random Forest model (tunable)
+rf_spec <- rand_forest(
+  mtry = tune(),
+  min_n = tune(),
+  trees = 300
+) %>%
+  set_engine("ranger", seed = 1234) %>%
+  set_mode("regression")
 
-# Define penalty grid
-penalty_grid <- tibble(penalty = 10^seq(-5, 2, length.out = 50))
+# Random Forest workflow 
+rf_workflow <- workflow() %>%
+  add_model(rf_spec) %>%
+  add_recipe(model_recipe)
+```
+
+```{r}
+# Define 5-fold CV repeated 5 times
+cv_folds <- vfold_cv(data, v = 5, repeats = 5)
 
 # Tune LASSO with CV
 lasso_cv_res <- tune_grid(
@@ -171,7 +216,7 @@ rf_cv_res <- tune_grid(
 autoplot(rf_cv_res)
 ```
 
-Using a repeated 5-fold cross-validation, we will be able to get more reliable estimates of model performance. For LASSO, the RMSE curve across shows where the ideal penalty lies......
+When using cross-validation, the RMSE values are generally higher compared to tuning without cross-validation. This is because the model is evaluated on unseen data in each fold, providing a more realistic estimate of performance. Cross-validation helps prevent overfitting and gives a better indication of how the model will perform on new data.
 
 ## Select best parameters
 ```{r}
@@ -201,7 +246,7 @@ final_rf <- finalize_workflow(
   fit(data)
 ```
 
-Using the selected optimal parameter, we fit the final LASSO and Ransom Forest models to the full datatset. These models will be used for predictions and comaparison.
+Using the selected optimal parameter, we fit the final LASSO and Random Forest models to the full dataset. These models will be used for predictions and comparison.
 
 ## Predictions and RMSE
 ```{r}
@@ -215,7 +260,7 @@ rmse(rf_preds, truth = Y, estimate = .pred)
 
 ```
 
-The RMSE values quanitify model predition on the full dataset. For this dataset, the LASSO model has an RMSE of ~582, while the Random Forest model has an RMSE of ~467. This indicates that the Random Forest captures patterns in data better, likely due to its ability to model nonlinear relationships that the LASSO model cannot. 
+The RMSE values quantify model predition on the full dataset. For this dataset, the LASSO model has an RMSE of ~582, while the Random Forest model has an RMSE of ~467. This indicates that the Random Forest captures patterns in data better, likely due to its ability to model nonlinear relationships that the LASSO model cannot. 
 
 ## Observed vs Predicted Plots
 ```{r}
@@ -234,7 +279,7 @@ ggplot(rf_preds, aes(x = Y, y = .pred)) +
   labs(title = "Observed vs Predicted (Random Forest)", x = "Observed Y", y = "Predicted Y")
 ```
 
-Observed vs predicted plots visualize model performance. Points are close to the diagonal indicate accruate prediction. LASSO predictions are more lineae while Random Forest may capture nonlinear relationships better.
+Observed vs predicted plots visualize model performance. Points are close to the diagonal indicate accurate prediction. LASSO predictions are more linear while Random Forest may capture nonlinear relationships better.
 
 
 

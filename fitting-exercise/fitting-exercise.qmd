@@ -521,6 +521,7 @@ plot_df <- train_data %>%
     upper = pred_summary$upper
   )
 ```
+
 Plot for uncertainty visualization:
 ```{r}
 ggplot(plot_df, aes(x = Y)) +
@@ -579,5 +580,11 @@ rmse_train
 rmse_test
 ```
 
-The RMSE for the training data (520) is lower than the test data (627), indicating that the model performs better on than the data it was trained on. The increase in RMSE for the test data suggests some loss of accuracy on the new data.
+The RMSE for the training data (520) is lower than the test data (627), indicating that the model performs better on than the data it was trained on. The increase in RMSE for the test data suggests some loss of accuracy on the new data. 
+
+```{r}
+# Save the cleaned dataset for the ML exercise
+saveRDS(analysis_data2, "clean_data.rds")
+```
+
 
