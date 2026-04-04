@@ -1,0 +1,247 @@
+---
+title: "Machine Learning Models Exercise"
+format: html
+editor: visual
+---
+
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(here)
+library(GGally)
+
+
+set.seed(1234)
+
+# Load your cleaned dataset
+data <- readRDS(here("ml-models-exercise", "clean_data.rds"))
+glimpse(data)
+```
+
+```{r}
+glimpse(data)        # see the structure
+summary(data)        # quick summary of numeric variables
+```
+
+## Pairwise Correlations
+```{r}
+
+# Select continuous variables
+cont_vars <- data %>% select(Y, DOSE, AGE, HT, WT)
+
+# Pairwise correlation plot
+ggpairs(cont_vars)
+```
+
+```{r}
+data <- data %>%
+  mutate(BMI = 703 * WT / (HT^2))
+```
+
+## Preparing the Data for Modeling
+```{r}
+# Recipe
+rec <- recipe(Y ~ ., data = data) %>%
+  step_dummy(all_nominal_predictors())  # encode SEX or other factors
+```
+
+## Fitting the Models
+Linear Model
+```{r}
+lin_mod <- linear_reg() %>%
+  set_engine("lm")
+
+lin_wf <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(lin_mod)
+
+lin_fit <- lin_wf %>% fit(data)
+lin_pred <- predict(lin_fit, data) %>% bind_cols(data)
+lin_pred
+```
+
+RMSE
+```{r}
+rmse(lin_pred, truth = Y, estimate = .pred)
+```
+
+LASSO Regression
+```{r}
+lasso_mod <- linear_reg(penalty = 0.1, mixture = 1) %>%
+  set_engine("glmnet")
+
+lasso_wf <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(lasso_mod)
+
+lasso_fit <- lasso_wf %>% fit(data)
+lasso_pred <- predict(lasso_fit, data) %>% bind_cols(data)
+rmse(lasso_pred, truth = Y, estimate = .pred)
+```
+
+Forest 
+```{r}
+rf_mod <- rand_forest() %>%
+  set_engine("ranger", seed = 1234) %>%
+  set_mode("regression")
+
+rf_wf <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(rf_mod)
+
+rf_fit <- rf_wf %>% fit(data)
+rf_pred <- predict(rf_fit, data) %>% bind_cols(data)
+rmse(rf_pred, truth = Y, estimate = .pred)
+
+```
+
+Observed vs Predicted plots
+```{r}
+library(ggplot2)
+
+# Function for plotting
+plot_pred <- function(df){
+  ggplot(df, aes(x = Y, y = .pred)) +
+    geom_point() +
+    geom_abline(slope = 1, intercept = 0, color = "red") +
+    labs(x = "Observed Y", y = "Predicted Y") +
+    theme_minimal()
+}
+
+plot_pred(lin_pred)
+plot_pred(lasso_pred)
+plot_pred(rf_pred)
+```
+
+# Tuning
+
+## LASSO tuning (no cv) --> Code stops here 
+```{r}
+library(tidymodels)
+
+
+# Recipe: handle factors and zero-variance predictors
+model_recipe <- recipe(Y ~ ., data = data) %>%
+  step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%  # convert categorical variables
+  step_zv(all_predictors())                                  # remove predictors with zero variance
+
+# LASSO model spec (penalty to tune)
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+
+# Workflow
+lasso_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(model_recipe)
+
+# Cross-validation
+cv_folds <- vfold_cv(data, v = 5, repeats = 5)
+
+
+# Define penalty grid
+penalty_grid <- tibble(penalty = 10^seq(-5, 2, length.out = 50))
+
+# Tune LASSO over CV folds
+lasso_cv_res <- tune_grid(
+  lasso_workflow,
+  resamples = cv_folds,
+  grid = penalty_grid,
+  metrics = metric_set(rmse)
+)
+
+# Plot RMSE vs penalty
+autoplot(lasso_cv_res)
+```
+
+
+## LASSO + RF tuning with 5x5 CV
+```{r}
+
+# 5-fold CV repeated 5 times
+cv_folds <- vfold_cv(data, v = 5, repeats = 5)
+
+# LASSO tuning with CV
+# penalty grid as numeric column
+penalty_grid <- tibble(penalty = 10^seq(-5, 2, length.out = 50))
+
+lasso_cv_res <- tune_grid(
+  lasso_workflow,
+  resamples = cv_folds,
+  grid = penalty_grid,   # must be a numeric column
+  metrics = metric_set(rmse)
+)
+
+autoplot(lasso_cv_res)
+
+
+# RF tuning with CV
+# Make sure rf_grid is a tibble
+rf_grid <- grid_regular(
+  mtry(range = c(1,7)),
+  min_n(range = c(1,21)),
+  levels = 7
+)
+
+rf_cv_res <- tune_grid(
+  rf_workflow,
+  resamples = cv_folds,
+  grid = rf_grid,
+  metrics = metric_set(rmse)
+)
+
+autoplot(rf_cv_res)
+```
+
+```{r}
+# Best LASSO penalty
+select_best(lasso_cv_res, "rmse")
+
+# Best RF parameters
+select_best(rf_cv_res, "rmse")
+```
+
+# Final Stretch 
+```{r}
+# Final LASSO
+final_lasso <- finalize_workflow(
+  lasso_workflow,
+  select_best(lasso_cv_res, metric = "rmse")
+) %>%
+  fit(data)
+
+# Final RF
+final_rf <- finalize_workflow(
+  rf_workflow,
+  select_best(rf_cv_res, metric = "rmse")
+) %>%
+  fit(data)
+```
+
+
+```{r}
+# Predict LASSO
+lasso_preds <- predict(final_lasso, data) %>% bind_cols(data)
+rmse(lasso_preds, truth = Y, estimate = .pred)
+
+# Predict RF
+rf_preds <- predict(final_rf, data) %>% bind_cols(data)
+rmse(rf_preds, truth = Y, estimate = .pred)
+```
+
+```{r}
+library(ggplot2)
+
+# LASSO
+ggplot(lasso_preds, aes(x = Y, y = .pred)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Observed vs Predicted (LASSO)", x = "Observed Y", y = "Predicted Y")
+
+# RF
+ggplot(rf_preds, aes(x = Y, y = .pred)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, color = "blue") +
+  labs(title = "Observed vs Predicted (Random Forest)", x = "Observed Y", y = "Predicted Y")
+```
