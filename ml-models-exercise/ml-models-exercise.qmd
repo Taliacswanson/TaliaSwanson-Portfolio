@@ -3,8 +3,7 @@ title: "Machine Learning Models Exercise"
 format: html
 editor: visual
 ---
-
-
+## Load the data 
 ```{r}
 library(tidyverse)
 library(tidymodels)
@@ -66,7 +65,9 @@ RMSE
 rmse(lin_pred, truth = Y, estimate = .pred)
 ```
 
-LASSO Regression
+The linear model provides a baseline for comaprison. It assumes a linear relationship between predictors and the outcome. The RMSE from this model is approximately 581, providing a reference point for evaluating more flexible models.
+
+
 ```{r}
 lasso_mod <- linear_reg(penalty = 0.1, mixture = 1) %>%
   set_engine("glmnet")
@@ -80,7 +81,9 @@ lasso_pred <- predict(lasso_fit, data) %>% bind_cols(data)
 rmse(lasso_pred, truth = Y, estimate = .pred)
 ```
 
-Forest 
+The LASSO regression produces an RMSE of approxiamtely 582, which very similar RMSE to the linear model. This is expected because the penalty parameter is small, meaning that the model behaves similarly to a standard linear regression.
+
+
 ```{r}
 rf_mod <- rand_forest() %>%
   set_engine("ranger", seed = 1234) %>%
@@ -96,7 +99,8 @@ rmse(rf_pred, truth = Y, estimate = .pred)
 
 ```
 
-Observed vs Predicted plots
+The random forest model produces a much lower RMSE of approximately 347, showing improved performace comapred to the linear and LASSO models as the RMSE is lower. This can be expected as random forests are highly flexible models able to capture complex relationships in data. However, this flexibility can also increase the risk of overfitting with the data.
+
 ```{r}
 library(ggplot2)
 
@@ -114,36 +118,35 @@ plot_pred(lasso_pred)
 plot_pred(rf_pred)
 ```
 
+The observed versus predicted plots show that the random forest predicitons are generally closer to the 45-degree line 
+compared to the linear and LASSO models. This indicates better performance within the model as more predicitons closely match the observed values.
+
 # Tuning
 
-## LASSO tuning (no cv) --> Code stops here 
+## LASSO tuning (no cv) 
 ```{r}
-library(tidymodels)
+# Apparent resampling (full dataset)
+resamples_app <- apparent(data)
 
+# Tune LASSO over full dataset
+lasso_tune_res <- tune_grid(
+  lasso_workflow,
+  resamples = resamples_app,
+  grid = penalty_grid,
+  metrics = metric_set(rmse)
+)
+```
 
-# Recipe: handle factors and zero-variance predictors
-model_recipe <- recipe(Y ~ ., data = data) %>%
-  step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%  # convert categorical variables
-  step_zv(all_predictors())                                  # remove predictors with zero variance
+As the LASSO penalty increase, teh RMSE increases. This is expected as larger penalities shrink the coefficients toward zero, which reduces model flexibility and can underfit the data. With smaller penalties, the model behaves more like a standard linear regression. This gives a general look at how penalty values affect model performance, however cross-validation is needed for reliable estimates. 
 
-# LASSO model spec (penalty to tune)
-lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
-  set_engine("glmnet")
-
-
-# Workflow
-lasso_workflow <- workflow() %>%
-  add_model(lasso_spec) %>%
-  add_recipe(model_recipe)
-
+```{r}
 # Cross-validation
 cv_folds <- vfold_cv(data, v = 5, repeats = 5)
-
 
 # Define penalty grid
 penalty_grid <- tibble(penalty = 10^seq(-5, 2, length.out = 50))
 
-# Tune LASSO over CV folds
+# Tune LASSO with CV
 lasso_cv_res <- tune_grid(
   lasso_workflow,
   resamples = cv_folds,
@@ -151,36 +154,10 @@ lasso_cv_res <- tune_grid(
   metrics = metric_set(rmse)
 )
 
-# Plot RMSE vs penalty
-autoplot(lasso_cv_res)
-```
-
-
-## LASSO + RF tuning with 5x5 CV
-```{r}
-
-# 5-fold CV repeated 5 times
-cv_folds <- vfold_cv(data, v = 5, repeats = 5)
-
-# LASSO tuning with CV
-# penalty grid as numeric column
-penalty_grid <- tibble(penalty = 10^seq(-5, 2, length.out = 50))
-
-lasso_cv_res <- tune_grid(
-  lasso_workflow,
-  resamples = cv_folds,
-  grid = penalty_grid,   # must be a numeric column
-  metrics = metric_set(rmse)
-)
-
-autoplot(lasso_cv_res)
-
-
-# RF tuning with CV
-# Make sure rf_grid is a tibble
+# Random Forest tuning with CV
 rf_grid <- grid_regular(
-  mtry(range = c(1,7)),
-  min_n(range = c(1,21)),
+  mtry(range = c(1, 7)),
+  min_n(range = c(1, 21)),
   levels = 7
 )
 
@@ -194,42 +171,53 @@ rf_cv_res <- tune_grid(
 autoplot(rf_cv_res)
 ```
 
+Using a repeated 5-fold cross-validation, we will be able to get more reliable estimates of model performance. For LASSO, the RMSE curve across shows where the ideal penalty lies......
+
+## Select best parameters
 ```{r}
 # Best LASSO penalty
-select_best(lasso_cv_res, "rmse")
+best_lasso <- select_best(lasso_cv_res, metric = "rmse")
 
 # Best RF parameters
-select_best(rf_cv_res, "rmse")
+best_rf <- select_best(rf_cv_res, metric = "rmse")
 ```
 
-# Final Stretch 
+The best LASSO penalty minimizes RMSE across CV folds. Likewise, the best Random Forest parameters minimize RMSE and will be used to finalize each model .
+
+## Final models 
 ```{r}
-# Final LASSO
+# Final LASSO model
 final_lasso <- finalize_workflow(
   lasso_workflow,
-  select_best(lasso_cv_res, metric = "rmse")
+  best_lasso
 ) %>%
   fit(data)
 
-# Final RF
+# Final Random Forest model
 final_rf <- finalize_workflow(
   rf_workflow,
-  select_best(rf_cv_res, metric = "rmse")
+  best_rf
 ) %>%
   fit(data)
 ```
 
+Using the selected optimal parameter, we fit the final LASSO and Ransom Forest models to the full datatset. These models will be used for predictions and comaparison.
 
+## Predictions and RMSE
 ```{r}
-# Predict LASSO
+# Predict on full dataset
 lasso_preds <- predict(final_lasso, data) %>% bind_cols(data)
-rmse(lasso_preds, truth = Y, estimate = .pred)
-
-# Predict RF
 rf_preds <- predict(final_rf, data) %>% bind_cols(data)
+
+# RMSE
+rmse(lasso_preds, truth = Y, estimate = .pred)
 rmse(rf_preds, truth = Y, estimate = .pred)
+
 ```
 
+The RMSE values quanitify model predition on the full dataset. For this dataset, the LASSO model has an RMSE of ~582, while the Random Forest model has an RMSE of ~467. This indicates that the Random Forest captures patterns in data better, likely due to its ability to model nonlinear relationships that the LASSO model cannot. 
+
+## Observed vs Predicted Plots
 ```{r}
 library(ggplot2)
 
@@ -239,9 +227,15 @@ ggplot(lasso_preds, aes(x = Y, y = .pred)) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   labs(title = "Observed vs Predicted (LASSO)", x = "Observed Y", y = "Predicted Y")
 
-# RF
+# Random Forest
 ggplot(rf_preds, aes(x = Y, y = .pred)) +
   geom_point(alpha = 0.6) +
   geom_abline(slope = 1, intercept = 0, color = "blue") +
   labs(title = "Observed vs Predicted (Random Forest)", x = "Observed Y", y = "Predicted Y")
 ```
+
+Observed vs predicted plots visualize model performance. Points are close to the diagonal indicate accruate prediction. LASSO predictions are more lineae while Random Forest may capture nonlinear relationships better.
+
+
+
+
