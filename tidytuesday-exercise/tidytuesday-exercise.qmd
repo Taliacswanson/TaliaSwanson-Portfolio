@@ -1,0 +1,152 @@
+---
+title: "Tidy Tuesday: Bird Sightings at Sea"
+format: html
+editor: visual
+---
+
+# Tidy Tuesday Exercise 
+
+```{r}
+# Loading the dataset
+library(tidyverse)
+library(tidymodels)
+library(tidytuesdayR)
+
+tuesdata <- tt_load("2026-04-14")
+birds <- tuesdata$birds
+
+#overview of the data we have
+glimpse(birds)
+```
+
+```{r}
+summary(birds)
+```
+
+```{r}
+# EDA top 10 most frequent in the dataset and counts 
+birds %>%
+  count(species_common_name, sort = TRUE) %>%
+  slice_head(n = 10) %>%
+  ggplot(aes(x = reorder(species_common_name, n), y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Species",
+    y = "Number of sightings",
+    title = "Top 10 Most Frequently Sighted Bird Species"
+  )
+```
+
+## Research Questions
+Based on the explorated data analysis from the data, I will attempt to predict whether a bird sighting has a high or low number of birds observed using bird species and environment/location. This will be a binary classification problem.
+
+```{r}
+birds <- birds %>%
+  mutate(
+    high_count = ifelse(count > median(count, na.rm = TRUE), "high", "low"),
+    high_count = as.factor(high_count)
+  )
+```
+
+The outcome variable was created by converting bird count into a binary classification (high vs low) based on the median value.
+
+```{r}
+set.seed(123)
+
+split <- initial_split(birds, prop = 0.7)
+train <- training(split)
+test <- testing(split)
+```
+
+The dataset was split into training (70%) and testing (30%) sets to evaluate model performance on unseen data.
+
+```{r}
+rec <- recipe(high_count ~ species_common_name + sex + age +
+                n_feeding + n_sitting_on_water + n_flying_past,
+              data = train) %>%
+
+  step_string2factor(all_nominal_predictors()) %>%
+
+  step_impute_mode(all_nominal_predictors()) %>%
+  step_impute_median(all_numeric_predictors()) %>%
+
+  step_novel(all_nominal_predictors()) %>%
+  step_unknown(all_nominal_predictors()) %>%
+
+  step_dummy(all_nominal_predictors()) %>%
+
+  step_zv(all_predictors())
+```
+
+A recipe was created for predictors by handling categorical variables.
+
+## Modeling 
+### Logistic Regression
+```{r}
+log_model <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+log_wf <- workflow() %>%
+  add_model(log_model) %>%
+  add_recipe(rec)
+```
+
+### Random Forest 
+```{r}
+rf_model <- rand_forest() %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+rf_wf <- workflow() %>%
+  add_model(rf_model) %>%
+  add_recipe(rec)
+```
+
+### Decision Tree
+```{r}
+tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+tree_wf <- workflow() %>%
+  add_model(tree_model) %>%
+  add_recipe(rec)
+```
+
+### Cross Validation
+
+```{r}
+set.seed(123)
+
+folds <- vfold_cv(train, v = 5)
+```
+
+```{r}
+log_fit <- fit_resamples(
+  log_wf,
+  resamples = folds,
+  metrics = metric_set(accuracy, roc_auc)
+)
+
+rf_fit <- fit_resamples(
+  rf_wf,
+  resamples = folds,
+  metrics = metric_set(accuracy, roc_auc)
+)
+
+tree_fit <- fit_resamples(
+  tree_wf,
+  resamples = folds,
+  metrics = metric_set(accuracy, roc_auc)
+)
+```
+
+```{r}
+collect_metrics(log_fit)
+collect_metrics(rf_fit)
+collect_metrics(tree_fit)
+```
+
+Model performance was compared using cross-validated accuracy and ROC AUC. The best-performing model was selected based on a balance of predictive performance and interpretability.
