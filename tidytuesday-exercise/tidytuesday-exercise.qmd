@@ -4,7 +4,9 @@ format: html
 editor: visual
 ---
 
-# Tidy Tuesday Exercise 
+# Tidy Tuesday Exercise "Bird Sighting at Sea"
+
+This exercise applies a full data analysis workflow to explore and model bird sighting data from Tidy Tuesday.
 
 ```{r}
 # Loading the dataset
