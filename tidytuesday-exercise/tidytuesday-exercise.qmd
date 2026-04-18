@@ -19,9 +19,24 @@ birds <- tuesdata$birds
 glimpse(birds)
 ```
 
+This dataset contains bird sightings recorded at a sea near New Zealand between 1969 and 1990. Each row represents a 10-minute observationperiod and includes information on species, counts, and behavior. Looking at the structure of the data helps identify variable types and potential missing values that may need to be addressed before analysis of the dataset. 
+
+```{r}
+birds <- birds %>%
+  filter(!is.na(count)) %>%
+  mutate(
+    high_count = ifelse(count > median(count), "high", "low"),
+    high_count = as.factor(high_count)
+  )
+```
+
+To prepare the data modeling, observations with missing bird counts were removed. A new binary outcome variable, 'high_count', was made by comparing each observation's count to the median count and observations above the median were labeled as "high" while those below the median were labeled "low". This will allow the data to be used as classification categories. 
+
 ```{r}
 summary(birds)
 ```
+
+Summary statistics provide a quick overview of the disttribution of variables in the dataset, including central tendencies and the presence of missing values.
 
 ```{r}
 # EDA top 10 most frequent in the dataset and counts 
@@ -38,18 +53,10 @@ birds %>%
   )
 ```
 
+The pliot above shows the most frequently observed bird species in the dataset. A small number of species are frequently present in the observations, which may influence model performance, particularly with predictors related to species
+
 ## Research Questions
-Based on the explorated data analysis from the data, I will attempt to predict whether a bird sighting has a high or low number of birds observed using bird species and environment/location. This will be a binary classification problem.
-
-```{r}
-birds <- birds %>%
-  mutate(
-    high_count = ifelse(count > median(count, na.rm = TRUE), "high", "low"),
-    high_count = as.factor(high_count)
-  )
-```
-
-The outcome variable was created by converting bird count into a binary classification (high vs low) based on the median value.
+Based on the explorated data analysis from the data, the goal of this analysis is to predict whether a bird sighting results in a high or low number of observed birds. This will be looked as a classification problem, where the outcome is the 'high_count' variable and predictors include species and behavioral characteristics.
 
 ```{r}
 set.seed(123)
@@ -62,11 +69,8 @@ test <- testing(split)
 The dataset was split into training (70%) and testing (30%) sets to evaluate model performance on unseen data.
 
 ```{r}
-rec <- recipe(high_count ~ species_common_name + sex + age +
-                n_feeding + n_sitting_on_water + n_flying_past,
-              data = train) %>%
-
-  step_string2factor(all_nominal_predictors()) %>%
+rec <- recipe(high_count ~ species_common_name + sex + age + n_feeding + n_sitting_on_water + n_flying_past,
+  data = train) %>%
 
   step_impute_mode(all_nominal_predictors()) %>%
   step_impute_median(all_numeric_predictors()) %>%
@@ -79,9 +83,12 @@ rec <- recipe(high_count ~ species_common_name + sex + age +
   step_zv(all_predictors())
 ```
 
-A recipe was created for predictors by handling categorical variables.
+A recipe was created to prepare the data for modeling. Categorical variables were converted into dummy variables, and predictors with zero variance were removed to ensure that all models clean and usable data.
 
 ## Modeling 
+
+Three different classification models were fit to the data: logistic regression, random forest, and decision tree. 
+
 ### Logistic Regression
 ```{r}
 log_model <- logistic_reg() %>%
@@ -106,7 +113,7 @@ rf_wf <- workflow() %>%
 
 ### Decision Tree
 ```{r}
-tree_model <- decision_tree() %>%
+tree_model <- decision_tree()%>%
   set_engine("rpart") %>%
   set_mode("classification")
 
@@ -124,23 +131,14 @@ folds <- vfold_cv(train, v = 5)
 ```
 
 ```{r}
-log_fit <- fit_resamples(
-  log_wf,
-  resamples = folds,
-  metrics = metric_set(accuracy, roc_auc)
-)
+log_fit <- fit_resamples(log_wf, resamples = folds,
+metrics = metric_set(accuracy, roc_auc))
 
-rf_fit <- fit_resamples(
-  rf_wf,
-  resamples = folds,
-  metrics = metric_set(accuracy, roc_auc)
-)
+rf_fit <- fit_resamples(rf_wf, resamples = folds,
+metrics = metric_set(accuracy, roc_auc))
 
-tree_fit <- fit_resamples(
-  tree_wf,
-  resamples = folds,
-  metrics = metric_set(accuracy, roc_auc)
-)
+tree_fit <- fit_resamples(tree_wf, resamples = folds,
+metrics = metric_set(accuracy, roc_auc))
 ```
 
 ```{r}
@@ -149,4 +147,42 @@ collect_metrics(rf_fit)
 collect_metrics(tree_fit)
 ```
 
+```{r}
+model_results <- bind_rows(
+  collect_metrics(log_fit) %>% mutate(model = "logistic"),
+  collect_metrics(rf_fit) %>% mutate(model = "random_forest"),
+  collect_metrics(tree_fit) %>% mutate(model = "decision_tree")
+)
+
+model_results
+```
+
 Model performance was compared using cross-validated accuracy and ROC AUC. The best-performing model was selected based on a balance of predictive performance and interpretability.
+
+## Model Selection and Test Evaluation
+
+```{r}
+model_results %>%
+  filter(.metric == "roc_auc") %>%
+  arrange(desc(mean)) %>%
+  select(model, mean)
+```
+
+```{r}
+final_model <- rf_wf %>%
+  fit(data = train)
+```
+
+```{r}
+test_preds <- predict(final_model, test) %>%
+  bind_cols(test)
+
+metrics(test_preds, truth = high_count, estimate = .pred_class)
+```
+
+## Discussion
+In this analysis, bird sighting data was used to develop a model that predicts whether an observation has a high or low bird count. After exploring the data and testing multiple models, the random forest model performed best based on cross-validated ROC AUC.
+
+When evaluated on the test dataset, the model kept reasonable predictive performance, suggesting that it generalizes well to new data. However, the results should not be interpreted causally, as many external factors influencing bird sightings are not captured in the dataset.
+
+Overall, this exercise demonstrates a full data analysis workflow, including data cleaning, exploratory analysis, model building, and evaluation using real-world data.
