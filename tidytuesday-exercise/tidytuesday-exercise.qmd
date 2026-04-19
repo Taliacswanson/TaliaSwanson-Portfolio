@@ -21,7 +21,7 @@ birds <- tuesdata$birds
 glimpse(birds)
 ```
 
-This dataset contains bird sightings recorded at a sea near New Zealand between 1969 and 1990. Each row represents a 10-minute observationperiod and includes information on species, counts, and behavior. Looking at the structure of the data helps identify variable types and potential missing values that may need to be addressed before analysis of the dataset. 
+This dataset contains bird sightings recorded at sea near New Zealand between 1969 and 1990. Each row represents a 10-minute observation period and includes information on species, counts, and behavior. Looking at the structure of the data helps identify variable types and potential missing values that may need to be addressed before analysis of the dataset. 
 
 ```{r}
 birds <- birds %>%
@@ -32,7 +32,7 @@ birds <- birds %>%
   )
 ```
 
-To prepare the data modeling, observations with missing bird counts were removed. A new binary outcome variable, 'high_count', was made by comparing each observation's count to the median count and observations above the median were labeled as "high" while those below the median were labeled "low". This will allow the data to be used as classification categories. 
+To prepare the data for modeling, observations with missing bird counts were removed. A new binary outcome variable, 'high_count', was made by comparing each observation's count to the median count and observations above the median were labeled as "high" while those below the median were labeled "low". This will allow the data to be used as classification categories. 
 
 ```{r}
 summary(birds)
@@ -55,7 +55,7 @@ birds %>%
   )
 ```
 
-The pliot above shows the most frequently observed bird species in the dataset. A small number of species are frequently present in the observations, which may influence model performance, particularly with predictors related to species
+The plot shows the most frequently observed bird species in the dataset. A small number of species are frequently present in the observations, which may influence model performance, particularly with predictors related to species
 
 ## Research Questions
 Based on the explorated data analysis from the data, the goal of this analysis is to predict whether a bird sighting results in a high or low number of observed birds. This will be looked as a classification problem, where the outcome is the 'high_count' variable and predictors include species and behavioral characteristics.
@@ -85,7 +85,7 @@ rec <- recipe(high_count ~ species_common_name + sex + age + n_feeding + n_sitti
   step_zv(all_predictors())
 ```
 
-A recipe was created to prepare the data for modeling. Categorical variables were converted into dummy variables, and predictors with zero variance were removed to ensure that all models clean and usable data.
+A recipe was created to prepare the data for modeling. Categorical variables were converted into dummy variables, and predictors with zero variance were removed to ensure that all models have clean and usable data.
 
 ## Modeling 
 
@@ -102,6 +102,8 @@ log_wf <- workflow() %>%
   add_recipe(rec)
 ```
 
+A logistic regression model was used as a baseline to classify observations into high or low bird counts.
+
 ### Random Forest 
 ```{r}
 rf_model <- rand_forest() %>%
@@ -112,6 +114,8 @@ rf_wf <- workflow() %>%
   add_model(rf_model) %>%
   add_recipe(rec)
 ```
+
+A random forest model was used to capture more complex,  non-linear relationships between predictors and bird counts.
 
 ### Decision Tree
 ```{r}
@@ -124,8 +128,9 @@ tree_wf <- workflow() %>%
   add_recipe(rec)
 ```
 
-### Cross Validation
+A decision tree model was included as a method that splits the data based on predictor values.
 
+### Cross Validation
 ```{r}
 set.seed(123)
 
@@ -162,6 +167,8 @@ model_results
 Model performance was compared using cross-validated accuracy and ROC AUC. The best-performing model was selected based on a balance of predictive performance and interpretability.
 
 ## Model Selection and Test Evaluation
+
+The random forest model achieved the highest ROC AUC and was selected as the final model for evaluation on the test dataset.
 
 ```{r}
 model_results %>%
