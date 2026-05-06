@@ -2,6 +2,8 @@
 title: "Machine Learning Models Exercise"
 format: html
 editor: visual
+execute:
+  eval: false
 ---
 ## Load the data 
 ```{r}
