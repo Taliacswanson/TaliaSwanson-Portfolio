@@ -195,4 +195,3 @@ In this analysis, bird sighting data was used to develop a model that predicts w
 When evaluated on the test dataset, the model kept reasonable predictive performance, suggesting that it generalizes well to new data. However, the results should not be interpreted causally, as many external factors influencing bird sightings are not captured in the dataset.
 
 Overall, this exercise demonstrates a full data analysis workflow, including data cleaning, exploratory analysis, model building, and evaluation using real-world data.
-
