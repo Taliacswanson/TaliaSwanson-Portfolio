@@ -1,5 +1,5 @@
 ---
-title: "Data Exercis Option 2, Synthetic Data"
+title: "Data Exercise Option 2, Synthetic Data"
 format: html
 ---
 
@@ -54,7 +54,7 @@ ggplot(data, aes(x = sleep_hours, y = GPA)) +
   )
 ```
 
-There is a positive relationship between sleep hours and GPA. Students who report more sleep tend to have higher academic performance. 
+The scatterplot shows a positive relationship between sleep hours and GPA. Students who report more sleep tend to have higher GPA values, suggesting that sleep is associated with better academic performance in this dataset. 
 
 ```{r}
 # Stress and GPA
@@ -68,7 +68,7 @@ ggplot(data, aes(x = stress_score, y = GPA)) +
   )
 ```
 
-There is a negative relationship between stress score and GPA. As stress increases, GPA tends to decrease. 
+The scatterplot shows a negative relationship between stress score and GPA. As stress increases, GPA tends to decline, indicating that higher stress levels are associated with lower academic performance in this dataset. 
 
 ## Linear Regression Model
 ```{r}
@@ -83,5 +83,4 @@ The linear regression model explains a substantial amount of variation in GPA (R
 
 Sleep hours has a positive and significant effect on GPA (β = 0.134, p < 2e-16), indicating that more sleep is associated with higher academic performance.
 
-Stress score has a negative and significant effect on GPA (β = -0.021, p < 2e-16), meaning higher stress is associated with lower GPA.
-These results match the relationships built into the synthetic dataset.
+Stress score has a negative and significant effect on GPA (β = -0.021, p < 2e-16), meaning higher stress is associated with lower GPA. These results match the relationships built into the synthetic dataset.
