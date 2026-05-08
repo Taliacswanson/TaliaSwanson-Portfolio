@@ -17,6 +17,8 @@ website:
             file: ready-exercise/ready-exercise.html
           - text: "Data Analysis Exercise"
             file: cdcdata-exercise/cdcdata-exercise.qmd
+          - text: "Data Exercise"
+            file: data-exercise/data-exercise.qmd
           - text: "Presentation Exercise"
             file: presentation-exercise/presentation-exercise.qmd
           - text: "Model Fitting Exercise"
